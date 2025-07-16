@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.typesafe.akka:akka-actor_2.13:2.6.20'
+    implementation 'com.typesafe.akka:akka-testkit_2.13:2.6.20'
+    testImplementation 'junit:junit:4.13.2'
+}
+
+application {
+    mainClass = 'com.example.traffic.Main'
+}
