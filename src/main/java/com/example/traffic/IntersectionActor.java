@@ -9,89 +9,96 @@ import java.util.List;
 
 public class IntersectionActor extends AbstractActor {
 
-
+    private final String intersectionId;
     private final ActorRef controlCenter;
-
-    // Use LinkedList as a simple ordered list
     private final LinkedList<VehiclePath> waitingList = new LinkedList<>();
     private boolean isProcessing = false;
 
-    public IntersectionActor(ActorRef controlCenter) {
+    public IntersectionActor(String intersectionId, ActorRef controlCenter) {
+        this.intersectionId = intersectionId;
         this.controlCenter = controlCenter;
     }
 
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-
-                // RECEIVED VEHICLE PATH
                 .match(VehiclePath.class, path -> {
-                    waitingList.addLast(path); // Add vehicle to end of list
+                    waitingList.addLast(path);
                     processNext();
                 })
 
-                // RESPONSE FROM CONTROL CENTER
                 .match(EnterResponse.class, response -> {
                     if (response.status == EnterResponse.Status.ALLOW) {
-                        System.out.println("Vehicle " + response.vehicleId + " allowed to enter city center.");
+                        System.out.println(" Vehicle " + response.vehicleId + " allowed to enter center.");
 
-                        // Simulate vehicle in city center for 8 seconds
                         getContext().system().scheduler().scheduleOnce(
                                 Duration.ofSeconds(8),
                                 () -> {
                                     controlCenter.tell(new CityControlCenterActor.ExitNotice(response.vehicleId), getSelf());
-                                    System.out.println("Vehicle " + response.vehicleId + " exited city center.");
-
-                                    // Remove the front vehicle from list after exit
-                                    if (!waitingList.isEmpty() && waitingList.getFirst().vehicleId.equals(response.vehicleId)) {
-                                        waitingList.removeFirst();
-                                    }
-
+                                    System.out.println(" Vehicle " + response.vehicleId + " exited city center.");
+                                    removeVehicle(response.vehicleId);
                                     isProcessing = false;
                                     processNext();
                                 },
                                 getContext().system().dispatcher()
                         );
-
                     } else if (response.status == EnterResponse.Status.WAIT) {
                         System.out.println("Vehicle " + response.vehicleId + " waiting due to congestion.");
                         isProcessing = false;
-                        // Do not remove vehicle, keep waiting in list
                     }
                 })
                 .build();
     }
 
     private void processNext() {
-        if (isProcessing || waitingList.isEmpty()) {
-            return;
-        }
+        if (isProcessing || waitingList.isEmpty()) return;
 
         isProcessing = true;
         VehiclePath nextVehicle = waitingList.getFirst();
+        String vehicleId = nextVehicle.vehicleId;
 
-        if (nextVehicle.entersCenter) {
-            System.out.println("Vehicle " + nextVehicle.vehicleId + " requests to enter city center.");
-            controlCenter.tell(new EnterRequest(nextVehicle.vehicleId, getSelf().path().name(), nextVehicle.route), getSelf());
-        } else {
-            System.out.println("Vehicle " + nextVehicle.vehicleId + " is passing through, no center entry.");
+        if (nextVehicle.path.size() < 2) {
+            System.out.println(" Vehicle " + vehicleId + " completed path.");
+            waitingList.removeFirst();
+            isProcessing = false;
+            processNext();
+            return;
+        }
 
-            // Simulate immediate pass-through with delay of 3 seconds
-            getContext().system().scheduler().scheduleOnce(
-                    Duration.ofSeconds(3),
-                    () -> {
-                        System.out.println("Vehicle " + nextVehicle.vehicleId + " passed through.");
+        String from = nextVehicle.path.get(0);
+        String to = nextVehicle.path.get(1);
+        String routeKey = from + "-" + to;
 
-                        // Remove vehicle from front of list after passing
-                        if (!waitingList.isEmpty() && waitingList.getFirst().vehicleId.equals(nextVehicle.vehicleId)) {
-                            waitingList.removeFirst();
-                        }
+        System.out.println("Vehicle " + vehicleId + " moving from " + from + " to " + to);
+        controlCenter.tell(new CityControlCenterActor.RouteUpdate(vehicleId, routeKey), getSelf());
 
-                        isProcessing = false;
-                        processNext();
-                    },
-                    getContext().system().dispatcher()
-            );
+        // If going to center, ask permission
+        if (to.equals("Center")) {
+            controlCenter.tell(new CityControlCenterActor.EnterRequest(vehicleId, intersectionId, routeKey, true), getSelf());
+        }
+
+        getContext().system().scheduler().scheduleOnce(
+                Duration.ofSeconds(4),
+                () -> {
+                    // Notify CityControlCenter that vehicle left this segment
+                    String routeKey1 = intersectionId + "-" + nextVehicle.path.get(0); // current to next
+                    controlCenter.tell(
+                            new CityControlCenterActor.RouteLeave(nextVehicle.vehicleId, routeKey1),
+                            getSelf()
+                    );
+
+                    nextVehicle.path.remove(0);  // move to next segment
+                    isProcessing = false;
+                    processNext();
+                },
+                getContext().system().dispatcher()
+        );
+
+    }
+
+    private void removeVehicle(String vehicleId) {
+        if (!waitingList.isEmpty() && waitingList.getFirst().vehicleId.equals(vehicleId)) {
+            waitingList.removeFirst();
         }
     }
 }

@@ -3,24 +3,32 @@ package com.example.traffic;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 
-import java.util.List;
+import java.util.ArrayList;
+
+import java.util.Map;
 
 public class VehicleActor extends AbstractActor {
-    private final List<String> path;
-    private final ActorRef firstIntersection;
 
-    public VehicleActor(String vehicleId, List<String> path, ActorRef firstIntersection) {
+    private final String vehicleId;
+    private final ArrayList<String> path;
+    private final Map<String, ActorRef> intersectionMap;
+    private final ActorRef startIntersection;
+
+    public VehicleActor(String vehicleId, ArrayList<String> path, Map<String, ActorRef> intersectionMap, ActorRef startIntersection) {
+        this.vehicleId = vehicleId;
         this.path = path;
-        this.firstIntersection = firstIntersection;
+        this.intersectionMap = intersectionMap;
+        this.startIntersection = startIntersection;
     }
 
     @Override
     public void preStart() {
-        firstIntersection.tell(new VehiclePath(getSelf().path().name(), path), getSelf());
+        startIntersection.tell(new VehiclePath(vehicleId, path), getSelf());
+
     }
 
     @Override
     public Receive createReceive() {
-        return receiveBuilder().build(); // optional future behavior
+        return receiveBuilder().build();
     }
 }

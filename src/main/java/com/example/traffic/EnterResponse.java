@@ -7,7 +7,7 @@ public class EnterResponse {
 
     public final String vehicleId;
     public final Status status;
-    public final Optional<String> rerouteTo; // Optional reroute info
+    public final Optional<String> rerouteTo;
 
     public EnterResponse(String vehicleId, Status status) {
         this(vehicleId, status, Optional.empty());
@@ -19,4 +19,3 @@ public class EnterResponse {
         this.rerouteTo = rerouteTo;
     }
 }
-
