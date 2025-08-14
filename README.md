@@ -39,7 +39,7 @@ When the city expands or traffic grows:
 - Real-time decentralized decision-making.
 - Non-blocking concurrent operations.
 
-**Future Possibilities:**
+**Possibilities(Not Implemented Yet):**
 - AI-driven predictive traffic management.
 - Integration with public transport scheduling.
 - Multi-layer internal boundary control.
