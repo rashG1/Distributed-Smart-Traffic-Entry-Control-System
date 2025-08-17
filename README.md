@@ -68,7 +68,7 @@ When the city expands or traffic grows:
 ---
 
 ## Proposal & Documentation
-📄 [Read Full Proposal Here](#) *(Replace `#` with your link)*
+📄 [Read Full Proposal Here](https://drive.google.com/drive/folders/194Dv3dsO3SpfrY6AeqZ0M1I0w6ECoN-o?usp=sharing) 
 
 ---
 
